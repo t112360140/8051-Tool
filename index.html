@@ -1,0 +1,297 @@
+<html>
+    <head>
+        <title>8051 Tool</title>
+        <meta charset="utf-8">
+
+        <script src="https://v8.js-dos.com/latest/js-dos.js"></script>
+    </head>
+    <body>
+        <div style="height:100%;width:100%;">
+            <div style="height:70%;width:100%;">
+                <div style="height:100%;width:50%;float:left;">
+                    <table style="height:100%;width:100%;">
+                        <tr>
+                            <td>
+                                <textarea id="asm" placeholder="8051 ASM code" style="height:100%;width:100%;resize:none;margin-top:20px;" spellcheck="false" wrap="off"
+                                    onchange="localStorage.setItem('lastCode',this.value);"></textarea>
+                                <input type="file" onchange="
+                                    const _file=this.files[0];
+                                    if(_file){
+                                        const _reader=new FileReader();
+                                        _reader.onload=()=>{
+                                            document.getElementById('asm').value=_reader.result;
+                                        }
+                                        _reader.readAsText(_file);
+                                    }
+                                ">
+                            </td>
+                            <td style="width:80px;">
+                                <button style="width:100%;" onclick="
+                                const text=document.getElementById('asm').value;
+                                    if(text!=''&&dosCi){
+                                        const code=new TextEncoder().encode(text);
+                                        dosCi.fsWriteFile('./CODE.ASM',code);
+                                        sendKey([
+                                            82,69,83,67,65,78,257,                                  //RESCAN
+                                            88,56,48,53,49,32,45,84,32,67,79,68,69,46,65,83,77,     //X8051 -T CODE.ASM
+                                            257,
+                                        ]);
+                                    }
+                                ">&gt;</button><br><br><br>
+                                <button id="linkBT" style="width:100%;" onclick="
+                                    sendKey([
+                                        76,73,78,75,52,257,                 //LINK4
+                                        67,79,68,69,257,                    //CODE
+                                        257,257,257,257,88,257,
+                                    ]);
+                                ">Link</button><br><br>
+                                <button style="width:100%;" onclick="
+                                    DOS=newX8051DOS();
+                                ">Reset</button><br><br>
+                                Auto Link:<br><input type="checkbox" id="auto-link" checked><br><br>
+                                Auto Download:<br><input type="checkbox" id="auto-download" checked>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div style="width:50%;float:right;">
+                    <div id="dos" style="width:100%;" tabindex="0" onfocus="
+                            dosInputEnable=true;
+                        " onblur="
+                            dosInputEnable=false;
+                        "></div>
+                </div>
+            </div>
+            <table border="1" style="margin:50px auto 0 auto;">
+                <tr>
+                    <th colspan="2">Download to Board</th>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="file" onchange="
+                            const reader=new FileReader();
+                            reader.onload=()=>{
+                                file=new Uint8Array(reader.result);
+                            }
+                            reader.readAsArrayBuffer(this.files[0]);
+                        ">
+                    </td>
+                    <td>
+                        <button onclick="connect_UART();" style="width:100%;">Connect UART</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <progress id="progress" min="0" value="0" style="width:100%;">0%</progress>
+                    </td>
+                    <td>
+                        <button id="download-to-board" onclick="
+                            if(!file){
+                                alert('Not file!');
+                            }else if(!UART){
+                                alert('Not Connect UART!');
+                            }else{
+                                download();
+                            }
+                        " style="width:100%;">Download</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <script>
+            var UART,UART_writer,UART_reader;
+            var RX_buffer=[];
+            var file;
+
+            window.onload=()=>{
+                const lastCode=localStorage.getItem('lastCode');;
+                if(lastCode){
+                    document.getElementById('asm').value=lastCode;
+                }
+            }
+
+            var dosCi,dosInputEnable=false;
+            
+            var DOS;
+            newX8051DOS();
+
+            function newX8051DOS(){     //設定DOS模擬器
+                DOS=Dos(document.getElementById("dos"),{
+                    url: './jsdos/X8051.jsdos',
+                    autoStart:true,
+                    kiosk:true,
+                    onEvent: (event,ci)=>{
+                        if(event=='ci-ready'){
+                            dosCi=ci;
+                            ci.events().onStdout((s)=>{
+                                if(s.includes('Assembly Errors :  0')&&document.getElementById('auto-link').checked){
+                                    document.getElementById('linkBT').click();
+                                }
+                                if(s.includes('Link Errors :  0')){
+                                    dosCi.fsReadFile('./CODE.TSK')
+                                        .then((data)=>{
+                                            file=data;
+                                            if(document.getElementById('auto-download').checked){
+                                                document.getElementById('download-to-board').click();
+                                            }
+                                        });
+                                }
+                            });
+                        }
+                    },
+                });
+            }
+
+            function sendKey(keys=[],callback){     //傳送按鍵至DOS
+                if(dosCi&&keys.length>0){
+                    let key=keys.shift(1);
+                    if(key<400){
+                        dosCi.simulateKeyPress(key);
+                    }else{
+                        dosCi.sendKeyEvent(Math.floor(key/10),(key%10==1));
+                    }
+                    setTimeout(()=>{
+                        sendKey(keys);
+                    },30);
+                }else{
+                    if(callback){
+                        callback();
+                    }
+                }
+            }
+
+            window.addEventListener('keydown', function(event){
+                if(document.activeElement.tagName=='TEXTAREA'){
+                    if (event.key=='Tab'){
+                        const textarea=document.getElementById('asm');
+                        event.preventDefault();
+                        const start=textarea.selectionStart;
+                        const end=textarea.selectionEnd;
+                        textarea.value=textarea.value.substring(0,start)+'\t'+textarea.value.substring(end);
+                        textarea.selectionStart=
+                        textarea.selectionEnd=start+1;
+                    }
+                }
+                if(!dosInputEnable){
+                    event.stopPropagation();
+                }
+            }, true);
+
+            window.addEventListener('keyup', function(event){
+                if(!dosInputEnable){
+                    event.stopPropagation();
+                }
+            }, true);
+
+            window.addEventListener('keypress', function(event){
+                if(!dosInputEnable){
+                    event.stopPropagation();
+                }
+            }, true);
+
+            //-------------------UART-------------------------
+            async function connect_UART(){      //連接UART
+                    try{
+                        if(!UART){
+                            UART=await navigator.serial.requestPort();
+                            await UART.open({
+                                baudRate:4800,
+                                dataBits:8,
+                                parity:'none',
+                                stopBits:1
+                            });
+                        }
+                        if(UART&&UART.writable&&!UART_writer){
+                            UART_writer=UART.writable.getWriter();
+                        }
+                        if(UART&&UART.readable&&!UART_reader){
+                            UART_reader=UART.readable.getReader();
+                        }
+                    }catch(error){
+                        alert('Error: '+error);
+                    }
+            }
+
+            function UART_send(data){      //用UART傳送資料
+                UART_writer.write(new Uint8Array([data]));
+            }
+
+            readLoop();
+            async function readLoop(){     //當UART有資料輸入時，將資料放置Buffer
+                if(UART_reader){
+                    try{
+                        const {value,done}=await UART_reader.read();
+                        if(done){
+                            UART_reader.releaseLock();
+                            return;
+                        }
+                        RX_buffer=RX_buffer.concat([...value]);
+                        setTimeout(readLoop,0);
+                    }catch(error){
+                        console.error('Error:',error);
+                    }
+                }else{
+                    setTimeout(readLoop,0);
+                }
+            }
+
+            function closeUART(){   //關閉並遺忘UART
+                if(UART_reader){
+                    UART_reader.releaseLock();
+                    UART_reader=null;
+                }
+                if(UART_writer){
+                    UART_writer.releaseLock();
+                    UART_writer=null;
+                }
+                if(UART){
+                    UART.close();
+                    UART=null;
+                }
+            }
+
+            //--------------------下載------------------------
+            function download(){
+                setProgress(0,100);
+                UART_send(80);      //P
+                UART_send(Math.floor(file.length/256));
+                UART_send(file.length%256);
+                download_byte();
+                function download_byte(i=0){
+                    UART_send(file[i]);
+                    waitEcho();
+                    function waitEcho(counter=0){
+                        RX_buffer=[];
+                        setTimeout(()=>{
+                            let data=0;
+                            if(RX_buffer[0]===90){      //Z
+                                if(i<file.length-1){
+                                    setProgress(i+1,file.length);
+                                    download_byte(i+1);
+                                }else{
+                                    setProgress(100,100);
+                                    console.log('download finish!');
+                                    //closeUART();
+                                }
+                            }else if(counter<2000){
+                                waitEcho(counter+4);
+                            }else{
+                                setProgress(0,100);
+                                alert('DOWNLOAD ERROR!');
+                                //closeUART();
+                            }
+                        },4);
+                    }
+                }
+            }
+
+            function setProgress(value=0,max=100){  //進度條
+                const progress=document.getElementById('progress');
+                progress.max=max;
+                progress.value=value;
+                progress.innerHTML=`${Math.floor((value/max)*100)}%`;
+            }
+        </script>
+    </body>
+</html>
