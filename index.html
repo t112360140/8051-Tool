@@ -14,6 +14,10 @@
                             <td>
                                 <textarea id="asm" placeholder="8051 ASM code" style="height:100%;width:100%;resize:none;margin-top:20px;" spellcheck="false" wrap="off"
                                     onchange="localStorage.setItem('lastCode',this.value);"></textarea>
+                                <button onclick="
+                                    const ASM=document.getElementById('asm');
+                                    ASM.value=ASMBeautifier(ASM.value);
+                                ">Beautifier</button>
                                 <input type="file" onchange="
                                     const _file=this.files[0];
                                     if(_file){
@@ -211,6 +215,43 @@
                     event.stopPropagation();
                 }
             }, true);
+            
+            //-------------------ASM--------------------------
+
+
+            function ASMBeautifier(code=''){
+                code=code.replaceAll(/:[ \t]*\n/g,':').replaceAll(/: */g,':').replaceAll(/\n+/g,'\n').replaceAll('\t',' ').replaceAll(/ +/g,' ').replaceAll(/^ */mg,'').split('\n');
+                    let maxLen=1;
+                let out='';
+                    for(let i=0;i<code.length;i++){
+                        const codeLine=code[i].split(';')[0].replaceAll(/[ \t\n]/g,'').replace(/^[^:]:/,'');
+                        if((Math.ceil(codeLine.length/8))>maxLen){
+                            maxLen=(Math.ceil(codeLine.length/8));
+                        }
+                    }
+                for(let i=0;i<code.length;i++){
+                    let codeLine=code[i].split(';')[0].replace(/ +$/,'');
+                    let lineOut='';
+                    if(codeLine.includes(':')){
+                        lineOut+=`\n${codeLine.split(':')[0]}:\n`;
+                        codeLine=codeLine.replace(/^[^:]+:/g,'');
+                    }
+                    codeLine=codeLine.replaceAll(/^ */g,'');
+                    if(codeLine!=''){
+                        lineOut+=`\t${codeLine.split(' ')[0]}\t${codeLine.replace(/^(\S+)/,'').replace(/^ /,'')}`;
+                    }
+                    if(code[i].split(';')[1]){
+                        if(codeLine!=''){
+                            for(let j=0;j<(maxLen-(Math.round((lineOut.replace(/^\n.*\n/g,'').replaceAll(/[ \t\n]/g,'').length)/8)));j++){
+                                lineOut+='\t';
+                            }
+                        }
+                        lineOut+=`${code[i].replace(/^[^;]+/g,'')}`;
+                    }
+                    out+=`${lineOut}\n`;
+                }
+                return out.replaceAll('\t\n','\n').replaceAll(/\n$/g,'');
+            }
 
             //-------------------UART-------------------------
             async function connect_UART(){      //連接UART
