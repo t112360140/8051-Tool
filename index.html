@@ -56,10 +56,27 @@
                 </div>
                 <div style="width:50%;float:right;">
                     <div id="dos" style="width:100%;" tabindex="0" onfocus="
-                            dosInputEnable=true;
-                        " onblur="
-                            dosInputEnable=false;
-                        "></div>
+                        dosInputEnable=true;
+                    " onblur="
+                        dosInputEnable=false;
+                    "></div>
+                    <div>
+                        UART:<br>
+                        <textarea style="width:100%;resize:none;" rows="10" readonly></textarea>
+                        <table style="width:100%;white-space:nowrap;" id="UART-get-data">
+                            <tr>
+                                <td style="width:100%;"><input style="width:100%;" id="UART-send-data"></td>
+                                <td><button onclick="
+                                    UART_send(document.getElementById('UART-send-data').value);
+                                ">Send Char</button></td>
+                                <td><button onclick="
+                                    UART_send(Number(document.getElementById('UART-send-data').value));
+                                ">Send Data</button></td>
+                                <td><button onclick="document.getElementById('UART-get-data').value='';">Clear</button></td>
+                                <td>As String: <input type="checkbox" id="UART-as-string"></td>
+                            </tr>
+                        </table>
+                    </div>
                 </div>
             </div>
             <table border="1" style="margin:50px auto 0 auto;">
@@ -101,6 +118,7 @@
         
         <script>
             var UART,UART_writer,UART_reader;
+            var downloading=false;
             var RX_buffer=[];
             var file;
 
@@ -214,7 +232,14 @@
             }
 
             function UART_send(data){      //用UART傳送資料
-                UART_writer.write(new Uint8Array([data]));
+                if(typeof data==='number'){
+                    data=new Uint8Array([data]);
+                }else if(typeof data==='string'){
+                    data=new TextEncoder().encode(data);
+                }else{
+                    data=new Uint8Array(data);
+                }
+                UART_writer.write(data);
             }
 
             readLoop();
@@ -226,7 +251,17 @@
                             UART_reader.releaseLock();
                             return;
                         }
-                        RX_buffer=RX_buffer.concat([...value]);
+                        if(downloading){
+                            RX_buffer=RX_buffer.concat([...value]);
+                        }else{
+                            if(document.getElementById('UART-as-string').checked){
+                                document.getElementById('UART-get-data').value+=new TextDecoder().decode(value);
+                            }else{
+                                for(let i=0;i<value.length;i++){
+                                    document.getElementById('UART-get-data').value+=`${getTimeString()}: ${value[i].toString().padStart(3,' ')} / ${new TextDecoder().decode(new Uint8Array([value[i]]))}\n`;
+                                }
+                            }
+                        }
                         setTimeout(readLoop,0);
                     }catch(error){
                         console.error('Error:',error);
@@ -253,6 +288,7 @@
 
             //--------------------下載------------------------
             function download(){
+                downloading=true;
                 setProgress(0,100);
                 UART_send(80);      //P
                 UART_send(Math.floor(file.length/256));
@@ -272,6 +308,7 @@
                                 }else{
                                     setProgress(100,100);
                                     console.log('download finish!');
+                                    downloading=false;
                                     //closeUART();
                                 }
                             }else if(counter<2000){
@@ -279,6 +316,7 @@
                             }else{
                                 setProgress(0,100);
                                 alert('DOWNLOAD ERROR!');
+                                downloading=false;
                                 //closeUART();
                             }
                         },4);
@@ -291,6 +329,11 @@
                 progress.max=max;
                 progress.value=value;
                 progress.innerHTML=`${Math.floor((value/max)*100)}%`;
+            }
+
+            function getTimeString(){
+                const data=new Date();
+                return `${data.getHours().toString().padStart(2,'0')}:${data.getMinutes().toString().padStart(2,'0')}:${data.getSeconds().toString().padStart(2,'0')}-${data.getMilliseconds().toString().padStart(3,'0')}`;
             }
         </script>
     </body>
