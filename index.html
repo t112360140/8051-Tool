@@ -67,10 +67,14 @@
                             <tr>
                                 <td style="width:100%;"><input style="width:100%;" id="UART-send-data"></td>
                                 <td><button onclick="
-                                    UART_send(document.getElementById('UART-send-data').value);
+                                    if(UART&&!downloading){
+                                        UART_send(document.getElementById('UART-send-data').value);
+                                    }
                                 ">Send Char</button></td>
                                 <td><button onclick="
-                                    UART_send(Number(document.getElementById('UART-send-data').value));
+                                    if(UART&&!downloading){
+                                        UART_send(Number(document.getElementById('UART-send-data').value));
+                                    }
                                 ">Send Data</button></td>
                                 <td><button onclick="document.getElementById('UART-get-data').value='';">Clear</button></td>
                                 <td>As String: <input type="checkbox" id="UART-as-string"></td>
