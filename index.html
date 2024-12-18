@@ -233,7 +233,7 @@
                     let codeLine=code[i].split(';')[0].replace(/ +$/,'');
                     let lineOut='';
                     if(!(/^[A-z0-9:#@$, ]+($|;)/mg.test(code[i]))){
-                        for(let j=0;j<maxLen;j++){
+                        for(let j=0;j<maxLen+1;j++){
                             lineOut+='\t';
                         }
                         lineOut+=`;${code[i]}`;
