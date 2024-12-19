@@ -192,7 +192,10 @@
             window.addEventListener('keydown', function(event){
                 if(document.activeElement.tagName=='TEXTAREA'){
                     if(document.activeElement.getAttribute('id')==='UART-get-data'){
-                        console.log(event);
+                        if(UART&&!downloading){
+                            UART_send(event.keyCode);
+                        }
+                        event.preventDefault();
                     }else if(event.key=='Tab'){
                         const textarea=document.getElementById('asm');
                         event.preventDefault();
