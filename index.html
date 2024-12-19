@@ -31,7 +31,7 @@
                             </td>
                             <td style="width:80px;">
                                 <button style="width:100%;" onclick="
-                                const text=document.getElementById('asm').value;
+                                const text=document.getElementById('asm').value.replaceAll(/;.*$/mg,'');
                                     if(text!=''&&dosCi){
                                         const code=new TextEncoder().encode(text);
                                         dosCi.fsWriteFile('./CODE.ASM',code);
