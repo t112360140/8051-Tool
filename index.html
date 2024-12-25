@@ -328,7 +328,7 @@
                                 document.getElementById('UART-get-data').value+=new TextDecoder().decode(value);
                             }else{
                                 for(let i=0;i<value.length;i++){
-                                    document.getElementById('UART-get-data').value+=`${getTimeString()}: ${value[i].toString().padStart(3,' ')} / ${new TextDecoder().decode(new Uint8Array([value[i]]))}\n`;
+                                    document.getElementById('UART-get-data').value+=`${getTimeString()}: ${value[i].toString().padStart(3,' ')} / ${(32<=value[i]&&value[i]<=126)?new TextDecoder().decode(new Uint8Array([value[i]])):''}\n`;
                                 }
                             }
                             document.getElementById('UART-get-data').scrollTo(0,document.getElementById('UART-get-data').scrollHeight);
