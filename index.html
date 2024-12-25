@@ -287,7 +287,15 @@
                         if(UART&&UART.readable&&!UART_reader){
                             UART_reader=UART.readable.getReader();
                         }
+                        UART.ondisconnect=()=>{
+                            UART=null;
+                            UART_reader=null;
+                            UART_writer=null;
+                        }
                     }catch(error){
+                        UART=null;
+                        UART_writer=null;
+                        UART_reader=null;
                         alert('Error: '+error);
                     }
             }
@@ -336,16 +344,15 @@
             function closeUART(){   //關閉並遺忘UART
                 if(UART_reader){
                     UART_reader.releaseLock();
-                    UART_reader=null;
                 }
                 if(UART_writer){
                     UART_writer.releaseLock();
-                    UART_writer=null;
                 }
-                if(UART){
-                    UART.close();
-                    UART=null;
-                }
+                UART.forget();
+                UART.close();
+                UART=null;
+                UART_reader=null;
+                UART_writer=null;
             }
 
             //--------------------下載------------------------
