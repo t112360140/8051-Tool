@@ -256,10 +256,11 @@
                             lineOut+=`\t${codeLine.split(' ')[0]}\t${codeLine.replace(/^(\S+)/,'').replace(/^ /,'')}`;
                         }
                         if(code[i].split(';')[1]){
-                            if(codeLine!=''){
-                                for(let j=0;j<(maxLen-(Math.round((lineOut.replace(/^\n.*\n/g,'').replaceAll(/[ \t\n]/g,'').length)/8)));j++){
-                                    lineOut+='\t';
-                                }
+                            if(codeLine===''){
+                                lineOut+='\t';
+                            }
+                            for(let j=0;j<(maxLen-(Math.round((lineOut.replace(/^\n.*\n/g,'').replaceAll(/[ \t\n]/g,'').length)/8)));j++){
+                                lineOut+='\t';
                             }
                             lineOut+=`${code[i].replace(/^[^;]+/g,'')}`;
                         }
