@@ -259,7 +259,7 @@
                             if(codeLine===''){
                                 lineOut+='\t';
                             }
-                            for(let j=0;j<(maxLen-(Math.round((lineOut.replace(/^\n.*\n/g,'').replaceAll(/[ \t\n]/g,'').length)/8)));j++){
+                            for(let j=0;j<(maxLen-(Math.ceil((lineOut.replace(/^\n.*\n/g,'').replaceAll(/[ \t\n]/g,'').length)/8)));j++){
                                 lineOut+='\t';
                             }
                             lineOut+=`${code[i].replace(/^[^;]+/g,'')}`;
